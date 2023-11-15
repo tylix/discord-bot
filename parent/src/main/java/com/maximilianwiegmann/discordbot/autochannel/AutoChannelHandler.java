@@ -29,10 +29,7 @@ public class AutoChannelHandler implements IAutoChannelHandler {
 
             Long[] tempChannel = tempChannelConfig.get(String.valueOf(l), Long[].class);
             if (tempChannel == null) tempChannel = new Long[]{};
-            else {
-                tempChannelConfig.set(String.valueOf(l), null);
-                tempChannelConfig.saveConfig();
-            }
+            else tempChannelConfig.set(String.valueOf(l), null);
 
             childChannel.put(l, new ArrayList<>(Arrays.asList(tempChannel)));
 
@@ -43,6 +40,7 @@ public class AutoChannelHandler implements IAutoChannelHandler {
                     deleteChannel(voiceChannel);
             }
         }
+        tempChannelConfig.saveConfig();
         System.out.println(MessageFormat.format("{0} channel(s) has been successfully loaded.", autoChannel.size()));
     }
 

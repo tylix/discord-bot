@@ -3,10 +3,16 @@ package com.maximilianwiegmann.discordbot;
 import com.maximilian.discordbot.IDiscordBot;
 import com.maximilian.discordbot.JsonConfig;
 import com.maximilian.discordbot.autochannel.IAutoChannelHandler;
+import com.maximilian.discordbot.commands.handler.ICommandManager;
 import com.maximilian.discordbot.logger.Logger;
+import com.maximilian.discordbot.music.IMusicManager;
 import com.maximilianwiegmann.discordbot.autochannel.AutoChannelHandler;
+import com.maximilianwiegmann.discordbot.command.CommandManager;
+import com.maximilianwiegmann.discordbot.command.MusicCommand;
 import com.maximilianwiegmann.discordbot.listener.ReadyListener;
+import com.maximilianwiegmann.discordbot.listener.SlashListener;
 import com.maximilianwiegmann.discordbot.listener.autochannel.AutoChannelListener;
+import com.maximilianwiegmann.discordbot.music.MusicManager;
 import lombok.Getter;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
@@ -30,6 +36,8 @@ public class DiscordBot implements IDiscordBot {
     private JDA jda;
 
     private IAutoChannelHandler autoChannelHandler;
+    private ICommandManager commandManager;
+    private IMusicManager musicManager;
 
     @Override
     public void init() throws InterruptedException {
@@ -38,6 +46,9 @@ public class DiscordBot implements IDiscordBot {
 
         System.out.println("Loading Discord Bot...");
         autoChannelHandler = new AutoChannelHandler();
+        commandManager = new CommandManager();
+        commandManager.addCommand(new MusicCommand());
+        musicManager = new MusicManager();
         guildId = config.getOrDefaultSet("guildId", Long.class, 0L);
 
         JDABuilder builder = JDABuilder.createDefault(config.getOrDefaultSet("token", String.class, "yourtokenhere"));
@@ -59,7 +70,8 @@ public class DiscordBot implements IDiscordBot {
                 .enableCache(CacheFlag.VOICE_STATE)
                 .addEventListeners(
                         new ReadyListener(),
-                        new AutoChannelListener(autoChannelHandler)
+                        new AutoChannelListener(autoChannelHandler),
+                        new SlashListener()
                 ).build();
 
         jda.setAutoReconnect(true);

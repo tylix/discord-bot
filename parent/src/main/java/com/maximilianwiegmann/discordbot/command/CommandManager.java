@@ -35,8 +35,9 @@ public class CommandManager implements ICommandManager {
             for (String alias : command.getAliases())
                 commands.put(alias, command);
 
-        CommandData commandData = new CommandDataImpl(command.getName(), command.getDescription());
-
+        CommandDataImpl commandData = new CommandDataImpl(command.getName(), command.getDescription());
+        commandData.addOptions(command.getOptionData());
+        commandData.addSubcommands(commandData.getSubcommands());
         return commandData;
     }
 

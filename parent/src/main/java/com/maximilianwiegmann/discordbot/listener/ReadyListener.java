@@ -23,6 +23,7 @@ public class ReadyListener extends ListenerAdapter {
             System.out.println(MessageFormat.format("{0} user(s) has been successfully loaded.", 10));
 
             DiscordBot.INSTANCE.getAutoChannelHandler().loadAutoChannel();
+            DiscordBot.INSTANCE.getCommandManager().loadCommands();
         });
     }
 }
