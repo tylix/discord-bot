@@ -15,9 +15,9 @@ public class GuildMusicManager implements IGuildMusicManager {
     private final AbstractTrackScheduler scheduler;
     private final AudioPlayerSendHandler sendHandler;
 
-    public GuildMusicManager(AudioPlayerManager manager) {
+    public GuildMusicManager(AudioPlayerManager manager, long guildId) {
         this.audioPlayer = manager.createPlayer();
-        this.scheduler = new TrackScheduler(this.audioPlayer);
+        this.scheduler = new TrackScheduler(this.audioPlayer, guildId);
         this.audioPlayer.addListener(this.scheduler);
         this.sendHandler = new AudioPlayerSendHandler(this.audioPlayer);
     }

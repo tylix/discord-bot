@@ -56,7 +56,7 @@ public class MusicCommand extends AbstractCommand {
 
         OptionMapping stopMapping = event.getOption("stop");
         if (stopMapping != null) {
-            DiscordBot.INSTANCE.getMusicManager().stop(event.getChannel().asTextChannel());
+            DiscordBot.INSTANCE.getMusicManager().stop(event.getGuild());
             return;
         }
 

@@ -15,6 +15,7 @@ public abstract class AbstractTrackScheduler extends AudioEventAdapter {
 
     private final AudioPlayer audioPlayer;
     private final BlockingQueue<AudioTrack> queue;
+    private final long guildId;
 
     public abstract void queue(AudioTrack track);
 

@@ -54,7 +54,7 @@ public class AutoChannelHandler implements IAutoChannelHandler {
                 createChannel(channelJoined, member);
                 break;
             case DISCONNECT:
-                if (channelLeft.getMembers().isEmpty())
+                if (channelLeft.getMembers().isEmpty() || channelLeft.getMembers().size() == 1 && channelLeft.getMembers().get(0).getUser().isBot())
                     deleteChannel(channelLeft);
                 break;
             case SWITCH:
@@ -66,7 +66,7 @@ public class AutoChannelHandler implements IAutoChannelHandler {
                     return;
                 }
 
-                if (hasParent(channelLeft.getIdLong()) && channelLeft.getMembers().isEmpty())
+                if (hasParent(channelLeft.getIdLong()) && channelLeft.getMembers().isEmpty() || channelLeft.getMembers().size() == 1 && channelLeft.getMembers().get(0).getUser().isBot())
                     deleteChannel(channelLeft);
 
                 if (isAutoChannel(channelJoined.getIdLong())) createChannel(channelJoined, member);

@@ -10,7 +10,7 @@ public interface IMusicManager {
 
     void loadAndPlay(TextChannel textChannel, String trackURL);
 
-    void stop(TextChannel textChannel);
+    void stop(Guild guild);
 
     void skip(TextChannel textChannel);
 

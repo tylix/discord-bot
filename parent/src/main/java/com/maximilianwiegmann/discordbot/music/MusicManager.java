@@ -49,7 +49,10 @@ public class MusicManager implements IMusicManager {
                 if (!tracks.isEmpty()) {
                     AudioTrack track = tracks.get(0);
                     musicManager.getScheduler().queue(track);
-                    textChannel.sendMessage("Adding to queue **`" + track.getInfo().title + "`** by **`" + track.getInfo().author + "`**").queue();
+                    if (tracks.size() > 1)
+                        for (int i = 1; i < tracks.size(); i++)
+                            musicManager.getScheduler().queue(tracks.get(i));
+                    textChannel.sendMessage("Adding **`" + tracks.size() + " Tracks`** to queue").queue();
                 }
             }
 
@@ -66,22 +69,25 @@ public class MusicManager implements IMusicManager {
     }
 
     @Override
-    public void stop(TextChannel textChannel) {
-        IGuildMusicManager musicManager = getMusicManager(textChannel.getGuild());
+    public void stop(Guild guild) {
+        IGuildMusicManager musicManager = getMusicManager(guild);
         musicManager.getScheduler().getAudioPlayer().stopTrack();
-        textChannel.getGuild().getAudioManager().closeAudioConnection();
+        guild.getAudioManager().closeAudioConnection();
     }
 
     @Override
     public void skip(TextChannel textChannel) {
         IGuildMusicManager musicManager = getMusicManager(textChannel.getGuild());
         musicManager.getScheduler().nextTrack();
+
+        AudioTrack track = musicManager.getScheduler().getAudioPlayer().getPlayingTrack();
+        textChannel.sendMessage("Now playing **`" + track.getInfo().title + "`** by **`" + track.getInfo().author + "`**").queue();
     }
 
     @Override
     public IGuildMusicManager getMusicManager(Guild guild) {
         return this.musicManagers.computeIfAbsent(guild.getIdLong(), (guildId) -> {
-            IGuildMusicManager guildMusicManager = new GuildMusicManager(this.audioPlayerManager);
+            IGuildMusicManager guildMusicManager = new GuildMusicManager(this.audioPlayerManager, guildId);
             guild.getAudioManager().setSendingHandler(guildMusicManager.getSendHandler());
             return guildMusicManager;
         });
