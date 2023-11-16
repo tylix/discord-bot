@@ -5,6 +5,7 @@ import com.maximilian.discordbot.autochannel.IAutoChannelHandler;
 import com.maximilianwiegmann.discordbot.DiscordBot;
 import lombok.Getter;
 import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.PermissionOverride;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.channel.concrete.VoiceChannel;
 
@@ -97,8 +98,18 @@ public class AutoChannelHandler implements IAutoChannelHandler {
     public void createChannel(VoiceChannel parent, Member member) {
         System.out.println("Creating auto channel " + DiscordBot.INSTANCE.intToRoman(childChannel.get(parent.getIdLong()).size() + 1) + " " + parent.getName());
 
-        VoiceChannel channel = DiscordBot.INSTANCE.getGuild().createVoiceChannel(parent.getName() + " » " + DiscordBot.INSTANCE.intToRoman(childChannel.get(parent.getIdLong()).size() + 1)).setNSFW(parent.isNSFW()).setParent(parent.getParentCategory()).setPosition(parent.getPosition()).setUserlimit(parent.getUserLimit()).complete();
+        System.out.println(parent.getPositionRaw());
+        VoiceChannel channel = DiscordBot.INSTANCE.getGuild()
+                .createVoiceChannel(parent.getName() + " » " + DiscordBot.INSTANCE.intToRoman(childChannel.get(parent.getIdLong()).size() + 1))
+                .setNSFW(parent.isNSFW())
+                .setParent(parent.getParentCategory())
+                .setPosition(parent.getPositionRaw())
+                .setUserlimit(parent.getUserLimit())
+                .complete();
         childChannel.get(parent.getIdLong()).add(channel.getIdLong());
+        for (PermissionOverride rolePermissionOverride : parent.getPermissionContainer().getRolePermissionOverrides()) {
+            channel.getPermissionContainer().getManager().putPermissionOverride(rolePermissionOverride.getPermissionHolder(), rolePermissionOverride.getAllowed(), rolePermissionOverride.getDenied()).queue();
+        }
 
         DiscordBot.INSTANCE.getGuild().moveVoiceMember(member, channel).complete();
     }
