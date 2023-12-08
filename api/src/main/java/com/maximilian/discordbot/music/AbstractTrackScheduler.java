@@ -7,6 +7,7 @@ import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 
 @Getter
@@ -15,6 +16,7 @@ public abstract class AbstractTrackScheduler extends AudioEventAdapter {
 
     private final AudioPlayer audioPlayer;
     private final BlockingQueue<AudioTrack> queue;
+    private final List<AudioTrack> history;
     private final long guildId;
 
     public abstract void queue(AudioTrack track);

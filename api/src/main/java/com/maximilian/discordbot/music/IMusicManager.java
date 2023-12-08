@@ -8,7 +8,9 @@ import java.util.Map;
 
 public interface IMusicManager {
 
-    void loadAndPlay(TextChannel textChannel, String trackURL);
+    void loadAndPlay(TextChannel textChannel, String trackURL, long voiceChannel);
+
+    void loadAndPlay(TextChannel textChannel, Guild guild, String trackURL, long voiceChannel);
 
     void stop(Guild guild);
 

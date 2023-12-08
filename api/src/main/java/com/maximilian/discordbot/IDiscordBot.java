@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.maximilian.discordbot.autochannel.IAutoChannelHandler;
 import com.maximilian.discordbot.commands.handler.ICommandManager;
+import com.maximilian.discordbot.data.IDataHandler;
 import com.maximilian.discordbot.music.IMusicManager;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
@@ -13,6 +14,10 @@ public interface IDiscordBot {
     Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
     void init() throws InterruptedException;
+
+    void disable();
+
+    void startPing();
 
     JsonConfig getConfig();
 
@@ -26,8 +31,12 @@ public interface IDiscordBot {
 
     IMusicManager getMusicManager();
 
+    IDataHandler getDataHandler();
+
+    boolean isUrl(String uri);
+
     default Guild getGuild() {
-        return getJda().getGuildById(getGuildId());
+        return getDataHandler().getGuild(getGuildId());
     }
 
     default String intToRoman(int num) {

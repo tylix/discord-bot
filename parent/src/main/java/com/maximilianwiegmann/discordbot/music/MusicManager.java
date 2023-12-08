@@ -29,17 +29,29 @@ public class MusicManager implements IMusicManager {
     }
 
     @Override
-    public void loadAndPlay(TextChannel textChannel, String trackURL) {
-        IGuildMusicManager musicManager = getMusicManager(textChannel.getGuild());
+    public void loadAndPlay(TextChannel textChannel, String trackURL, long voiceChannel) {
+        loadAndPlay(textChannel, textChannel.getGuild(), trackURL, voiceChannel);
+    }
 
-        System.out.println(trackURL);
+    @Override
+    public void loadAndPlay(TextChannel textChannel, Guild guild, String trackURL, long voiceChannel) {
+
+        IGuildMusicManager musicManager = getMusicManager(guild);
+
+        if (!guild.getAudioManager().isConnected())
+            guild.getAudioManager().openAudioConnection(guild.getVoiceChannelById(voiceChannel));
+
+        guild.getAudioManager().setSelfDeafened(true);
+        guild.getAudioManager().setSelfMuted(false);
 
         this.audioPlayerManager.loadItemOrdered(musicManager, trackURL, new AudioLoadResultHandler() {
             @Override
             public void trackLoaded(AudioTrack audioTrack) {
                 musicManager.getScheduler().queue(audioTrack);
 
-                textChannel.sendMessage("Adding to queue **`" + audioTrack.getInfo().title + "`** by **`" + audioTrack.getInfo().author + "`**").queue();
+                if (textChannel != null)
+                    textChannel.sendMessage("Adding to queue **`" + audioTrack.getInfo().title + "`** by **`" + audioTrack.getInfo().author + "`**").queue();
+
             }
 
             @Override
@@ -49,10 +61,12 @@ public class MusicManager implements IMusicManager {
                 if (!tracks.isEmpty()) {
                     AudioTrack track = tracks.get(0);
                     musicManager.getScheduler().queue(track);
-                    if (tracks.size() > 1)
+                    if (tracks.size() > 1 && !audioPlaylist.isSearchResult()) {
                         for (int i = 1; i < tracks.size(); i++)
                             musicManager.getScheduler().queue(tracks.get(i));
-                    textChannel.sendMessage("Adding **`" + tracks.size() + " Tracks`** to queue").queue();
+                        if (textChannel != null)
+                            textChannel.sendMessage("Adding **`" + tracks.size() + " Tracks`** to queue").queue();
+                    }
                 }
             }
 
@@ -81,6 +95,7 @@ public class MusicManager implements IMusicManager {
         musicManager.getScheduler().nextTrack();
 
         AudioTrack track = musicManager.getScheduler().getAudioPlayer().getPlayingTrack();
+
         textChannel.sendMessage("Now playing **`" + track.getInfo().title + "`** by **`" + track.getInfo().author + "`**").queue();
     }
 

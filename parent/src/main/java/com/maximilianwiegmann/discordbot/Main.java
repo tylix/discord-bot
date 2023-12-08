@@ -11,6 +11,7 @@ public class Main {
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             DiscordBot.INSTANCE.getAutoChannelHandler().saveTempChannel();
+            DiscordBot.INSTANCE.disable();
 
             System.out.println("Disabling DiscordBot.");
         }));

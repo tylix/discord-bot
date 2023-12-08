@@ -28,9 +28,10 @@ public interface IAutoChannelHandler {
         return getAutoChannel().stream().anyMatch(aLong -> aLong == id);
     }
 
-    default boolean isChildChannel(long id, long target) {
-        if (!getChildChannel().containsKey(id)) return false;
-        return getChildChannel().get(id).stream().anyMatch(aLong -> aLong == id);
+    default boolean isChildChannel(long id) {
+        return getChildChannel().entrySet().stream().anyMatch(longListEntry -> longListEntry.getValue().stream().anyMatch(aLong -> aLong == id));
+        /*if (!getChildChannel().containsKey(id)) return false;
+        return getChildChannel().get(id).stream().anyMatch(aLong -> aLong == id);*/
     }
 
     default Long getParent(long childId) {

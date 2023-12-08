@@ -64,21 +64,12 @@ public class MusicCommand extends AbstractCommand {
         if (trackMapping == null) return;
 
         String track = trackMapping.getAsString();
-        if (!isUrl(track)) {
+        if (!DiscordBot.INSTANCE.isUrl(track)) {
             track = "ytsearch:" + track + " audio";
         }
 
-        DiscordBot.INSTANCE.getMusicManager().loadAndPlay(event.getChannel().asTextChannel(), track);
+        DiscordBot.INSTANCE.getMusicManager().loadAndPlay(event.getChannel().asTextChannel(), track, member.getVoiceState().getChannel().getIdLong());
 
         event.deferReply().queue();
-    }
-
-    private boolean isUrl(String urlString) {
-        try {
-            new URL(urlString);
-            return true;
-        } catch (MalformedURLException e) {
-            return false;
-        }
     }
 }
