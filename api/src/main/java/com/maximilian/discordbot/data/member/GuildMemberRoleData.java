@@ -1,4 +1,4 @@
-package com.maximilian.discordbot.data;
+package com.maximilian.discordbot.data.member;
 
 import lombok.Builder;
 import lombok.Data;
@@ -9,15 +9,11 @@ import lombok.Setter;
 @Data
 @Getter
 @Setter
-public class GuildChannelData {
+public class GuildMemberRoleData {
 
     private String name;
     private String id;
-    private int type;
     private int position;
-    private String topic;
-    private boolean nsfw;
-    private int maxMember;
-    private int member;
+    private int color;
 
 }

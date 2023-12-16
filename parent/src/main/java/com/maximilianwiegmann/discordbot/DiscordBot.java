@@ -34,7 +34,10 @@ import net.dv8tion.jda.api.OnlineStatus;
 import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
+import net.dv8tion.jda.api.entities.channel.Channel;
+import net.dv8tion.jda.api.entities.channel.attribute.IAgeRestrictedChannel;
 import net.dv8tion.jda.api.entities.channel.attribute.IPositionableChannel;
+import net.dv8tion.jda.api.entities.channel.middleman.StandardGuildMessageChannel;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
@@ -54,8 +57,8 @@ public class DiscordBot implements IDiscordBot {
     public static IDiscordBot INSTANCE;
 
     private final JsonConfig config = new JsonConfig(new File("config.json"));
-    private final String url = "https://api.maximilianwiegmann.com/service";
-    //private final String url = "http://localhost:8070/service";
+    private final String url = "https://api.maximilianwiegmann.com";
+    //private final String url = "http://localhost:8080";
     private long guildId;
     private JDA jda;
 
@@ -67,6 +70,7 @@ public class DiscordBot implements IDiscordBot {
     private JwtService jwtService;
     private String token;
     private String serviceId;
+    private SseClient client;
 
     @SneakyThrows
     @Override
@@ -80,12 +84,12 @@ public class DiscordBot implements IDiscordBot {
         connect();
 
         System.out.println("Loading Discord Bot...");
+        guildId = config.getOrDefaultSet("guildId", Long.class, 0L);
         autoChannelHandler = new AutoChannelHandler();
         dataHandler = new DataHandler();
         commandManager = new CommandManager();
         commandManager.addCommand(new MusicCommand());
         musicManager = new MusicManager();
-        guildId = config.getOrDefaultSet("guildId", Long.class, 0L);
 
         JDABuilder builder = JDABuilder.createDefault(config.getOrDefaultSet("token", String.class, "yourtokenhere"));
         EnumSet<GatewayIntent> intents = EnumSet.of(
@@ -94,7 +98,8 @@ public class DiscordBot implements IDiscordBot {
                 GatewayIntent.GUILD_VOICE_STATES,
                 GatewayIntent.GUILD_MESSAGE_REACTIONS,
                 GatewayIntent.GUILD_MEMBERS,
-                GatewayIntent.GUILD_EMOJIS_AND_STICKERS
+                GatewayIntent.GUILD_EMOJIS_AND_STICKERS,
+                GatewayIntent.GUILD_PRESENCES
         );
 
         builder.setActivity(Activity.watching("\uD83D\uDC40"));
@@ -103,7 +108,7 @@ public class DiscordBot implements IDiscordBot {
                 .setStatus(OnlineStatus.ONLINE)
                 .setRawEventsEnabled(true)
                 .setMemberCachePolicy(MemberCachePolicy.ALL)
-                .enableCache(CacheFlag.VOICE_STATE)
+                .enableCache(CacheFlag.VOICE_STATE, CacheFlag.CLIENT_STATUS, CacheFlag.ACTIVITY)
                 .addEventListeners(
                         new ReadyListener(),
                         new AutoChannelListener(autoChannelHandler),
@@ -120,10 +125,13 @@ public class DiscordBot implements IDiscordBot {
     @SneakyThrows
     public void connect() {
         token = jwtService.generateServiceToken(serviceId);
-        Request.builder().url(url).cookies(getHeader()).build().sendRequest();
+        Request.builder().url(url + "/service").cookies(getHeader()).build().sendRequest();
 
-        SseClient client = new SseClient("https://api.maximilianwiegmann.com/test/655ba1e73657f658a5d1f2d2/client", Collections.singletonMap("jwt", token), response -> {
-            //SseClient client = new SseClient("http://localhost:8070/test/655ba1e73657f658a5d1f2d2/client", Collections.singletonMap("jwt", token), response -> {
+        connectSse();
+    }
+
+    private void connectSse() {
+        client = new SseClient(url + "/test/655ba1e73657f658a5d1f2d2/client", Collections.singletonMap("jwt", token), response -> {
 
             Guild guild = jda.getGuildById((String) response.getData().get("guildId"));
             if (guild == null) return;
@@ -193,9 +201,14 @@ public class DiscordBot implements IDiscordBot {
                                     playingTrack.setPosition(0);
                                     return;
                                 }
-                                AudioTrack lastTrack = history.get(history.indexOf(playingTrack) - 1);
+                                int index = history.indexOf(playingTrack);
+                                if (index <= 0) {
+                                    playingTrack.setPosition(0);
+                                    return;
+                                }
+                                AudioTrack lastTrack = history.get(index - 1);
                                 if (lastTrack == null) return;
-                                audioPlayer.startTrack(lastTrack, false);
+                                audioPlayer.startTrack(lastTrack.makeClone(), false);
                             } else
                                 playingTrack.setPosition(0);
                         }
@@ -209,6 +222,8 @@ public class DiscordBot implements IDiscordBot {
                             if (audioTrack == null) return;
                             musicManager.getMusicManager(guild).getScheduler().getQueue().remove(audioTrack);
                             audioPlayer.startTrack(audioTrack, false);
+                            if (audioPlayer.isPaused())
+                                audioPlayer.setPaused(false);
                         }
                         case STOP -> {
                             AudioPlayer audioPlayer = musicManager.getMusicManager(guild).getScheduler().getAudioPlayer();
@@ -218,8 +233,24 @@ public class DiscordBot implements IDiscordBot {
                         }
                     }
                 }
-                case AUTO_CHANNEL -> {
-
+                case CHANNEL -> {
+                    switch (response.getAction()) {
+                        case TOGGLE_AUTO_CHANNEL -> {
+                            String channelId = (String) response.getData().get("channelId");
+                            if (autoChannelHandler.isAutoChannel(guild, Long.parseLong(channelId))) {
+                                autoChannelHandler.removeAutoChannel(guild, Long.parseLong(channelId));
+                                return;
+                            }
+                            autoChannelHandler.addAutoChannel(guild, Long.parseLong(channelId));
+                        }
+                        case TOGGLE_NSFW -> {
+                            String channelId = (String) response.getData().get("channelId");
+                            Channel channel = guild.getGuildChannelById(channelId);
+                            if (channel instanceof StandardGuildMessageChannel guildMessageChannel) {
+                                guildMessageChannel.getManager().setNSFW(!guildMessageChannel.isNSFW()).queue();
+                            }
+                        }
+                    }
                 }
             }
         });
@@ -228,8 +259,12 @@ public class DiscordBot implements IDiscordBot {
 
     @SneakyThrows
     public void ping() {
-        if (jwtService.isTokenExpired(token))
+        if (jwtService.isTokenExpired(token)) {
+            client.stop();
+            client = null;
             token = jwtService.generateServiceToken(serviceId);
+            connectSse();
+        }
 
         JSONObject data = new JSONObject()
                 .put("timestamp", System.currentTimeMillis())
@@ -259,13 +294,14 @@ public class DiscordBot implements IDiscordBot {
                                     .iconUrl(guild.getIconUrl())
                                     .channel(channel)
                                     .memberAmount(guild.getMemberCount())
+                                    .users(dataHandler.getUser(guild))
                                     .created(guild.getTimeCreated().toInstant().toEpochMilli())
                                     .musicPlayerData(musicPlayerData)
                                     .build();
                         })
                         .collect(Collectors.toList())));
 
-        Request.builder().url(url + "/ping")
+        Request.builder().url(url + "/service/ping")
                 .cookies(getHeader())
                 .body(new JSONObject()
                         .put("data", data)
@@ -294,7 +330,7 @@ public class DiscordBot implements IDiscordBot {
             public void run() {
                 ping();
             }
-        }, 0, 1000);
+        }, 500, 1000);
     }
 
     @Override

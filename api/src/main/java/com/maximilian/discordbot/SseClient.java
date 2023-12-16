@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import lombok.Builder;
 import lombok.Data;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
@@ -22,7 +23,9 @@ public class SseClient {
     private final Map<String, String> cookies;
     private boolean keepRunning = true;
 
-    private static final int RECONNECT_DELAY = 5000;
+    private static final int INITIAL_RECONNECT_DELAY = 5000; // 5 seconds
+    private static final int MAX_RECONNECT_DELAY = 300000;   // 5 minutes
+    private int currentReconnectDelay = INITIAL_RECONNECT_DELAY;
     private static final int CONNECTION_TIMEOUT = 20000;
     private static final int READ_TIMEOUT = 10000;
 
@@ -48,6 +51,8 @@ public class SseClient {
                         connection.setRequestProperty("Cookie", formatCookies());
                     }
 
+                    currentReconnectDelay = INITIAL_RECONNECT_DELAY;
+
                     try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
                         String line;
                         while (keepRunning && (line = reader.readLine()) != null) {
@@ -70,7 +75,8 @@ public class SseClient {
                 // Attempt to reconnect after a delay
                 if (keepRunning) {
                     try {
-                        Thread.sleep(RECONNECT_DELAY);
+                        Thread.sleep(currentReconnectDelay);
+                        currentReconnectDelay = Math.min(currentReconnectDelay * 2, MAX_RECONNECT_DELAY);
                     } catch (InterruptedException ie) {
                         Thread.currentThread().interrupt();
                         return;
@@ -101,21 +107,30 @@ public class SseClient {
 
     public enum TargetType {
         MUSIC,
-        AUTO_CHANNEL,
+        CHANNEL,
+        USER,
     }
 
+    @RequiredArgsConstructor
+    @Getter
     public enum Action {
-        TOGGLE_PAUSE,
-        SKIP,
-        RESUME,
-        ADD_TO_QUEUE,
-        REMOVE_FROM_QUEUE,
-        FORCE_QUEUE_ITEM,
-        CLEAR_QUEUE,
-        SHUFFLE,
-        CHANGE_VOLUME,
-        CHANGE_CHANNEL,
-        CHANGE_POSITION,
-        STOP
+        TOGGLE_PAUSE(TargetType.MUSIC),
+        SKIP(TargetType.MUSIC),
+        RESUME(TargetType.MUSIC),
+        ADD_TO_QUEUE(TargetType.MUSIC),
+        REMOVE_FROM_QUEUE(TargetType.MUSIC),
+        FORCE_QUEUE_ITEM(TargetType.MUSIC),
+        CLEAR_QUEUE(TargetType.MUSIC),
+        SHUFFLE(TargetType.MUSIC),
+        CHANGE_VOLUME(TargetType.MUSIC),
+        CHANGE_CHANNEL(TargetType.MUSIC),
+        CHANGE_POSITION(TargetType.MUSIC),
+        STOP(TargetType.MUSIC),
+        TOGGLE_AUTO_CHANNEL(TargetType.CHANNEL),
+        TOGGLE_NSFW(TargetType.CHANNEL);
+
+        private final TargetType targetType;
+
+
     }
 }

@@ -7,6 +7,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.lang.reflect.Type;
 
 public class JsonConfig {
 
@@ -48,6 +49,11 @@ public class JsonConfig {
     public <T> T get(String key, Class<T> tClass) {
         if (!this.object.has(key)) return null;
         return IDiscordBot.GSON.fromJson(this.object.get(key), tClass);
+    }
+
+    public <T> T get(String key, Type typeOfT) {
+        if (!this.object.has(key)) return null;
+        return IDiscordBot.GSON.fromJson(this.object.get(key), typeOfT);
     }
 
     public <T> T getOrDefaultSet(String key, Class<T> tClass, T defaultValue) {

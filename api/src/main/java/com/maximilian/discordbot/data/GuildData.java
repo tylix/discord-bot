@@ -1,5 +1,6 @@
 package com.maximilian.discordbot.data;
 
+import com.maximilian.discordbot.data.member.GuildUserData;
 import com.maximilian.discordbot.data.music.MusicPlayerData;
 import lombok.Builder;
 import lombok.Data;
@@ -20,6 +21,7 @@ public class GuildData {
     private String iconUrl;
     private MusicPlayerData musicPlayerData;
     private List<GuildChannelData> channel;
+    private List<GuildUserData> users;
     private int memberAmount;
 
     // TODO: ROLES, SETTINGS, USERS
